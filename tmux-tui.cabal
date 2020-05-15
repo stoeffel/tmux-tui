@@ -1,0 +1,110 @@
+cabal-version: 1.18
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 27cbd1296363b17b8b5275490a89cf552888f73d5260042e792a5fd31d3b11ae
+
+name:           tmux-tui
+version:        0.2.0.0
+synopsis:       Pretty printing a diff of two values.
+description:    Please see the README at <https://github.com/stoeffel/tmux-tui>.
+category:       Diffing
+homepage:       https://github.com/stoeffel/tmux-tui#readme
+bug-reports:    https://github.com/stoeffel/tmux-tui/issues
+author:         Christoph Hermann
+maintainer:     schtoeffel@gmail.com
+copyright:      2020 Christoph Hermann
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-doc-files:
+    README.md
+    CHANGELOG.md
+data-files:
+    ./words/large/adjectives.txt
+    ./words/large/adverbs.txt
+    ./words/large/names.txt
+    ./words/medium/adjectives.txt
+    ./words/medium/adverbs.txt
+    ./words/medium/names.txt
+    ./words/small/adjectives.txt
+    ./words/small/adverbs.txt
+    ./words/small/names.txt
+
+source-repository head
+  type: git
+  location: https://github.com/stoeffel/tmux-tui
+
+library
+  exposed-modules:
+      Tmux.Tui
+  other-modules:
+      Cmd
+      Petname
+      Tmux
+      Tmux.Stored
+      Paths_tmux_tui
+  hs-source-dirs:
+      src
+  default-extensions: DeriveGeneric GeneralizedNewtypeDeriving NamedFieldPuns NoImplicitPrelude OverloadedStrings ScopedTypeVariables
+  build-depends:
+      aeson
+    , attoparsec
+    , base >=4.10.1.0 && <5
+    , brick
+    , bytestring
+    , directory
+    , file-embed >=0.0.11 && <0.0.13
+    , filepath
+    , fuzzy
+    , microlens
+    , microlens-th
+    , process
+    , protolude
+    , random
+    , safe-exceptions
+    , text >=1.2 && <1.3
+    , text-zipper
+    , time >=1.9 && <2.0
+    , unix
+    , vty
+  default-language: Haskell2010
+
+executable tmux-tui
+  main-is: Main.hs
+  other-modules:
+      Paths_tmux_tui
+  hs-source-dirs:
+      app/
+  default-extensions: DeriveGeneric GeneralizedNewtypeDeriving NamedFieldPuns NoImplicitPrelude OverloadedStrings ScopedTypeVariables
+  ghc-options: -threaded -rtsopts "-with-rtsopts=-N -T" -O2
+  build-depends:
+      base
+    , protolude
+    , tmux-tui
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Cmd
+      Petname
+      Tmux
+      Tmux.Stored
+      Tmux.Tui
+      Paths_tmux_tui
+  hs-source-dirs:
+      test
+      src
+  default-extensions: DeriveGeneric GeneralizedNewtypeDeriving NamedFieldPuns NoImplicitPrelude OverloadedStrings ScopedTypeVariables
+  build-depends:
+      base
+    , protolude
+    , tasty >=1.1 && <1.3
+    , tasty-hunit
+    , tasty-test-reporter
+    , text >=1.2 && <1.3
+  default-language: Haskell2010

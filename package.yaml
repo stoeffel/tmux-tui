@@ -1,0 +1,82 @@
+name: tmux-tui
+version: 0.2.0.0
+synopsis: Pretty printing a diff of two values.
+description: Please see the README at <https://github.com/stoeffel/tmux-tui>.
+author: Christoph Hermann
+maintainer: schtoeffel@gmail.com
+copyright: 2020 Christoph Hermann
+homepage: https://github.com/stoeffel/tmux-tui#readme
+license-file: LICENSE
+category: Diffing
+github: stoeffel/tmux-tui
+extra-doc-files:
+  - README.md
+  - CHANGELOG.md
+default-extensions:
+  - DeriveGeneric
+  - GeneralizedNewtypeDeriving
+  - NamedFieldPuns
+  - NoImplicitPrelude
+  - OverloadedStrings
+  - ScopedTypeVariables
+data-files: 
+  - ./words/large/adjectives.txt
+  - ./words/large/adverbs.txt
+  - ./words/large/names.txt
+  - ./words/medium/adjectives.txt
+  - ./words/medium/adverbs.txt
+  - ./words/medium/names.txt
+  - ./words/small/adjectives.txt
+  - ./words/small/adverbs.txt
+  - ./words/small/names.txt
+executables:
+  tmux-tui:
+    dependencies:
+      - base
+      - tmux-tui
+      - protolude
+    ghc-options:
+      - -threaded
+      - -rtsopts "-with-rtsopts=-N -T"
+      - -O2
+    main: Main.hs
+    source-dirs:
+      - app/
+library:
+  dependencies:
+    - aeson
+    - attoparsec
+    - bytestring
+    - safe-exceptions
+    - base >= 4.10.1.0 && < 5
+    - brick
+    - file-embed >= 0.0.11 && < 0.0.13
+    - directory
+    - filepath
+    - fuzzy
+    - text >= 1.2 && < 1.3
+    - process
+    - text-zipper
+    - microlens
+    - microlens-th
+    - protolude
+    - random
+    - vty
+    - unix
+    - time >= 1.9 && < 2.0
+  exposed-modules:
+    - Tmux.Tui
+  source-dirs: src
+tests:
+  spec:
+    dependencies:
+      - base
+      - tasty >= 1.1 && < 1.3
+      - tasty-hunit
+      - tasty-test-reporter
+      - text >= 1.2 && < 1.3
+      - protolude
+    main: Main.hs
+    source-dirs:
+      - test
+      - src
