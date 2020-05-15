@@ -166,7 +166,7 @@ main = do
         Vty.setMode (Vty.outputIface v) Vty.Mouse True
         return v
   initialVty <- buildVty
-  Brick.customMain initialVty buildVty Nothing app =<< reload initialState
+  Brick.customMain initialVty buildVty Nothing app =<< reloadRefocus initialState
   pure ()
 
 app :: Brick.App Model Msg Name
@@ -233,7 +233,7 @@ handleEvent m (Brick.VtyEvent ev) =
           pure $ updateFilter target m {mode = Normal}
         _ ->
           updateFilter target <$> Brick.handleEventLensed m searchEditorLens Edit.handleEditorEvent ev
-      reloadedModel@Model {..} <- reload nextModel
+      reloadedModel@Model {..} <- reloadRefocus nextModel
       Brick.continue
         reloadedModel
           { focus = case target of
@@ -454,7 +454,7 @@ handleInstantiate m t maybeNewTitle =
   case find ((==) t . Tmux.sessionTitle . Tmux.Stored.session) $ storedSessions m of
     Just storedSession -> do
       _ <- Tmux.Stored.instantiate storedSession title
-      newM@Model {sessions, focus} <- reload m
+      newM@Model {sessions, focus} <- reloadRefocus m
       case find ((==) title . sessionTitle) sessions of
         Just Session {sessionId} ->
           updateWindows newM {focus = Focus.focusSetCurrent (FocusSession sessionId) focus}
@@ -711,15 +711,17 @@ currentWindowId m@Model {..} =
     _ -> Nothing
 
 refresh :: Model -> Brick.EventM Name (Brick.Next Model)
-refresh m = Brick.continue =<< reload m
+refresh m = Brick.continue =<< reloadRefocus m
+
+reloadRefocus :: MonadIO m => Model -> m Model
+reloadRefocus m = updateFocus <$> reload m
 
 reload :: MonadIO m => Model -> m Model
 reload m = do
   currentTime <- liftIO Time.getCurrentTime
   storedSessions <- Tmux.Stored.list
   sessions <- Tmux.listSessions
-  newM <- updatePanes =<< updateWindows m {sessions, storedSessions, currentTime}
-  pure $ updateFocus newM
+  updatePanes =<< updateWindows m {sessions, storedSessions, currentTime}
 
 updateFocus :: Model -> Model
 updateFocus m =
@@ -998,12 +1000,12 @@ viewPane :: FocusRing -> Pane -> Brick.Widget Name
 viewPane focus Pane {..} =
   styleCurrent (FocusPane paneId) focus label <+> info
   where
-    label = Brick.txt (show paneNumber)
+    label = Brick.txt (T.concat [show paneNumber, ": ", paneCurrentCommand])
       & Brick.clickable (FocusPane paneId)
       & case Focus.focusGetCurrent focus of
         Just (StoredSessionTitle t) -> identity
         _ -> isActiveToAttrName paneIsActive
-    info = Brick.txt (T.concat [" ", paneCurrentCommand, " ", paneCurrentPath]) & Brick.modifyDefAttr modDim
+    info = Brick.txt (T.concat [" ", paneCurrentPath]) & Brick.modifyDefAttr modDim
 
 box :: Text -> Bool -> Brick.Widget Name -> Brick.Widget Name
 box title focused w =

@@ -8,7 +8,7 @@
 
 This is a TUI to manage tmux sessions.
 
-**It's currently under heavy construction :construction:.**
+**:construction: It's currently under heavy construction and might break unexpectetly. :construction:**
 
 ![](./tmux-tui.gif)
 
@@ -25,6 +25,8 @@ I recommend setting up a keybinding to get to the TUI from anywhere.
 
 `bind -n C-h new-window -n tmux-tui -c "#{pane_current_path}" "tmux-tui"`
 
+And, if you want to switch to any open window if there is already a tmux-tui instance running use this.
+`bind -n C-h run-shell "tmux switch-client -t :tmux-tui || tmux new-window -k -n tmux-tui -c '#{pane_current_path}' 'tmux-tui'"`
 
 ### Starting
 
