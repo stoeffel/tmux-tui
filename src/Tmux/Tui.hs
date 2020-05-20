@@ -906,7 +906,7 @@ viewStoredSession focus currentTime Tmux.Stored.Session {Tmux.Stored.session = S
       ( if  | delta < 60 * 60 -> show (delta `divInt` 60) ++ "m"
             | delta < 24 * 60 * 60 -> show (delta `divInt` (60 * 60)) ++ "h"
             | delta < 7 * 24 * 60 * 60 -> show (delta `divInt` (24 * 60 * 60)) ++ "d"
-            | otherwise -> show ">7d"
+            | otherwise -> ">7d"
       )
         & T.pack
         & T.justifyLeft 4 ' '
