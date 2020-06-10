@@ -109,6 +109,7 @@ data Name
   = FocusSession SessionId
   | FocusWindow WindowId
   | FocusPane PaneId
+  | FocusNoSession
   | StoredSessionTitle Text
   | Panes
   | EditorLayer
@@ -138,6 +139,10 @@ main = do
         Focus.focusRing $
           (sessionToName <$> sessions)
             ++ (storedSessionToName <$> storedSessions)
+            ++ ( case sessions of
+                   [] -> [FocusNoSession]
+                   _ -> []
+               )
   let focus = case find ((== Active) . isAttached) sessions of
         Nothing -> focus'
         Just Session {sessionId} -> Focus.focusSetCurrent (FocusSession sessionId) focus'
@@ -279,7 +284,15 @@ runRename :: MonadIO m => Model -> m ()
 runRename = traverse_ (uncurry Tmux.rename) . focusedTmuxType
 
 runCreate :: MonadIO m => Model -> m ()
-runCreate = traverse_ (uncurry Tmux.create) . focusedTmuxType
+runCreate m@Model {..} =
+  case focusedTmuxType m of
+    Just (title, type') ->
+      Tmux.create title (Just type')
+    Nothing ->
+      case Focus.focusGetCurrent focus of
+        Just FocusNoSession ->
+          Tmux.create (editorVal editor) Nothing
+        _ -> pure ()
 
 runSwitch :: MonadIO m => Model -> m ()
 runSwitch = traverse_ (Tmux.switch . snd) . focusedTmuxType
@@ -331,14 +344,15 @@ handlePersist m@Model {storedSessions} =
 
 focusedTmuxType :: Model -> Maybe (Text, Tmux.TmuxType)
 focusedTmuxType Model {..} =
-  ((,) editorVal)
+  ((,) (editorVal editor))
     <$> case Focus.focusGetCurrent focus of
       Just (FocusWindow id) -> Tmux.TmuxWindow <$> find ((==) id . windowId) windows
       Just (FocusSession id) -> Tmux.TmuxSession <$> find ((==) id . sessionId) sessions
       Just (FocusPane id) -> Tmux.TmuxPane <$> find ((==) id . paneId) panes
       _ -> Nothing
-  where
-    editorVal = mconcat $ Edit.getEditContents editor
+
+editorVal :: Edit.Editor Text Name -> Text
+editorVal = mconcat . Edit.getEditContents
 
 data TmuxTuiException = NotImplementedYet
   deriving (Show)
@@ -432,8 +446,7 @@ handleSpace m =
                     InputData
                       { inputCallback = Callback $ \m@Model {editor} ->
                           do
-                            let editorVal = mconcat $ Edit.getEditContents editor
-                            handleInstantiate m t (Just editorVal),
+                            handleInstantiate m t (Just (editorVal editor)),
                         inputDialog =
                           yesNoDialog
                             YesNoDialog
@@ -485,12 +498,17 @@ handleMoveLeft m@Model {..} =
             Nothing -> m
             Just storedSession ->
               m {focus = Focus.focusSetCurrent (StoredSessionTitle . sessionTitle $ Tmux.Stored.session storedSession) focus}
+    Just FocusNoSession ->
+      case head storedSessions of
+        Nothing -> m
+        Just storedSession ->
+          m {focus = Focus.focusSetCurrent (StoredSessionTitle . sessionTitle $ Tmux.Stored.session storedSession) focus}
     Just (StoredSessionTitle title) ->
       case find ((==) title . sessionTitle) sessions <|> head sessions of
         Nothing -> m
         Just Session {sessionId} ->
           case find ((==) sessionId . windowSessionId) windows <|> head windows of
-            Nothing -> m
+            Nothing -> m {focus = Focus.focusSetCurrent FocusNoSession focus}
             Just Window {windowId} ->
               m {focus = Focus.focusSetCurrent (FocusWindow windowId) focus}
     _ -> m
@@ -523,9 +541,14 @@ handleMoveRight m@Model {..} =
             Nothing -> m
             Just Window {windowId} ->
               m {focus = Focus.focusSetCurrent (FocusWindow windowId) focus}
+    Just FocusNoSession ->
+      case head storedSessions of
+        Nothing -> m
+        Just storedSession ->
+          m {focus = Focus.focusSetCurrent (StoredSessionTitle . sessionTitle $ Tmux.Stored.session storedSession) focus}
     Just (StoredSessionTitle title) ->
       case find ((==) title . sessionTitle) sessions <|> head sessions of
-        Nothing -> m
+        Nothing -> m {focus = Focus.focusSetCurrent FocusNoSession focus}
         Just Session {sessionId} ->
           m {focus = Focus.focusSetCurrent (FocusSession sessionId) focus}
     _ -> m
@@ -652,6 +675,16 @@ handleCreate m@Model {focus, windows, sessions, editor} = do
                 },
           editor = Edit.applyEdit (\_ -> TZ.gotoEOL $ TZ.textZipper [name] Nothing) editor
         }
+    Just FocusNoSession ->
+      m
+        { mode =
+            RequireInput
+              InputData
+                { inputCallback = Callback_ runCreate,
+                  inputDialog = yesNoDialog YesNoDialog {title = "Creating Session", yes = "Save", no = "Cancel"}
+                },
+          editor = Edit.applyEdit (\_ -> TZ.gotoEOL $ TZ.textZipper [name] Nothing) editor
+        }
     _ -> m
 
 updateWindows :: MonadIO m => Model -> m Model
@@ -684,7 +717,7 @@ updatePanes m@Model {..} = do
       case find ((==) sessionTitle . Tmux.sessionTitle . Tmux.Stored.session) storedSessions of
         Just Tmux.Stored.Session {..} -> pure m {panes}
         Nothing -> pure m {panes = []}
-    Nothing -> pure m {panes = []}
+    _ -> pure m {panes = []}
 
 currentSessionId :: Model -> Maybe SessionId
 currentSessionId m@Model {..} =
@@ -732,6 +765,10 @@ updateFocus m =
             ++ (windowToName <$> windows)
             ++ (sessionToName <$> sessions)
             ++ (storedSessionToName <$> storedSessions)
+            ++ ( case sessions of
+                   [] -> [FocusNoSession]
+                   _ -> []
+               )
    in filterItems $ case Focus.focusGetCurrent focus of
         Just current -> filtered {focus = Focus.focusSetCurrent current newFocusRing}
         Nothing -> filtered {focus = newFocusRing}
@@ -846,7 +883,11 @@ yesNoDialog YesNoDialog {title, yes, no} =
 viewSessions :: Model -> Brick.Widget Name
 viewSessions Model {..} =
   ( case sessions of
-      [] -> [Brick.txt "No started sessions" & Brick.modifyDefAttr modDim]
+      [] ->
+        [ Brick.txt "No started sessions"
+            & Brick.modifyDefAttr modDim
+            & Brick.clickable FocusNoSession
+        ]
       xs ->
         viewSearch SearchSession mode focus searchEditor filterSession
           : (viewSession focus <$> xs)
@@ -1094,6 +1135,7 @@ sessionFocused :: FocusRing -> Bool
 sessionFocused focus =
   case Focus.focusGetCurrent focus of
     Just (FocusSession _) -> True
+    Just FocusNoSession -> True
     _ -> False
 
 storedSessionFocused :: FocusRing -> Bool
@@ -1182,6 +1224,8 @@ currentActionHelp Model {..} =
               Just _ -> "/: Search, esc: Clear filter"
               Nothing -> "/: Search, esc: Exit"
           ]
+      Just FocusNoSession ->
+        "c: Create"
       Just (StoredSessionTitle _) ->
         T.intercalate
           ", "

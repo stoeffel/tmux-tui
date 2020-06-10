@@ -383,11 +383,11 @@ rename newTitle (TmuxPane _) = pure ()
 rename newTitle tmuxType =
   Cmd.run_ "tmux" ["rename-" <> suffix tmuxType, "-t", target tmuxType, newTitle]
 
-create :: MonadIO m => Text -> TmuxType -> m ()
-create newTitle (TmuxPane _) = pure ()
-create newTitle (TmuxSession _) = Cmd.run_ "tmux" ["new-session", "-d", "-s", newTitle]
-create newTitle (TmuxWindow window) =
+create :: MonadIO m => Text -> Maybe TmuxType -> m ()
+create newTitle (Just (TmuxPane _)) = pure ()
+create newTitle (Just (TmuxWindow window)) =
   Cmd.run_ "tmux" ["new-window", "-d", "-t", windowSession window, "-n", newTitle]
+create newTitle _ = Cmd.run_ "tmux" ["new-session", "-d", "-s", newTitle]
 
 switch :: MonadIO m => TmuxType -> m ()
 switch tmuxType = do
