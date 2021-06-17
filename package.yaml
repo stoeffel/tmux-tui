@@ -50,7 +50,7 @@ library:
     - safe-exceptions
     - base >= 4.10.1.0 && < 5
     - brick
-    - file-embed >= 0.0.11 && < 0.0.13
+    - file-embed
     - directory
     - filepath
     - fuzzy
@@ -71,11 +71,28 @@ tests:
   spec:
     dependencies:
       - base
-      - tasty >= 1.1 && < 1.3
+      - tasty
       - tasty-hunit
       - tasty-test-reporter
       - text >= 1.2 && < 1.3
+      - aeson
+      - attoparsec
+      - bytestring
+      - safe-exceptions
+      - brick
+      - file-embed
+      - directory
+      - filepath
+      - fuzzy
+      - process
+      - text-zipper
+      - microlens
+      - microlens-th
       - protolude
+      - random
+      - vty
+      - unix
+      - time >= 1.9 && < 2.0
     main: Main.hs
     source-dirs:
       - test

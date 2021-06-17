@@ -1,3 +1,5 @@
-{ pkgs ? import ./nixpkgs.nix }:
+let
+  sources = import ./nix/sources.nix { };
+  pkgs = import sources.nixpkgs { };
 
-pkgs.haskellPackages.callCabal2nix "tmux-tui" ./. { }
+in pkgs.haskellPackages.callCabal2nix "tmux-tui" ./. { }
