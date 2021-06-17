@@ -1,3 +1,5 @@
-# 0.1.0.0
+# Revision history for tmux-tui
 
-- Initial implementation.
+## 0.1.0.0 -- YYYY-mm-dd
+
+* First version. Released on an unsuspecting world.
