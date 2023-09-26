@@ -425,6 +425,7 @@ runCommand target (Command command) =
       "-t",
       target,
       "C-z",
+      "BSpace",
       command <> " || echo 'Could not run: " <> command <> "'",
       "Enter"
     ]
